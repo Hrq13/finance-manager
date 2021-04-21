@@ -1,15 +1,35 @@
-function user(parent, args, ctx, info) {
-    // return prisma.user({ id: args.id })
-    //   .then(user => {
-    //     console.log("User: ", user)
-    //   })
-    return ctx.db.query.user({ where: { id: args.id }}, info)
-      .then(user => {
-        console.log("User: ", user)
-        return user
-      })
-  }
+const { getUserId } = require('../utils')
 
-  module.exports = {
-      user
-  }
+function accounts(_, args, ctx, info) {
+  const userId = getUserId(ctx)
+  return ctx.db.query.accounts({
+    where: {
+      OR: [
+        {
+          user: {
+            id: userId
+          }
+        },
+        {
+          user: null
+        }
+      ]
+    },
+    orderBy: 'description_ASC'
+  }, info)
+}
+
+function user(_, args, ctx, info) {
+  // return prisma.user({ id: args.id })
+  //   .then(user => {
+  //     console.log("User: ", user)
+  //   })
+
+  const userId = getUserId(ctx)
+  return ctx.db.query.user({ where: { id: userId }}, info)
+}
+
+module.exports = {
+  user,
+  accounts
+}
