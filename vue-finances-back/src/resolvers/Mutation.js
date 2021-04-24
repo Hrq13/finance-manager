@@ -1,8 +1,9 @@
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
+const moment = require('moment')
 const { getUserId } = require('../utils')
 
-async function createAccount (_, { description }, ctx, info) {
+function createAccount (_, { description }, ctx, info) {
   const userId = getUserId(ctx)
   return ctx.db.mutation.createAccount({
     data: {
@@ -12,6 +13,50 @@ async function createAccount (_, { description }, ctx, info) {
           id: userId
         }
       }
+    }
+  }, info)
+}
+
+function createCategory (_, { description, operation }, ctx, info) {
+  const userId = getUserId(ctx)
+  return ctx.db.mutation.createCategory({
+    data: {
+      description,
+      operation,
+      user: {
+        connect: {
+          id: userId
+        }
+      }
+    }
+  }, info)
+}
+
+async function createRecord (_, args, ctx, info) {
+
+  const date = moment(args.date)
+  if (!date.isValid()) {
+    throw new Error('Invalid date!')
+  }
+
+  const userId = getUserId(ctx)
+  return ctx.db.mutation.createRecord({
+    data: {
+      user: {
+        connect: { id: userId }
+      },
+      account: {
+        connect: { id: args.accountId }
+      },
+      category: {
+        connect: { id: args.categoryId }
+      },
+      amount: args.amount,
+      type: args.type,
+      date: args.date,
+      description: args.description,
+      tags: args.tags,
+      note: args.note,
     }
   }, info)
 }
@@ -50,7 +95,9 @@ async function signup (_, args, ctx, info) {
 
 
 module.exports = {
+  createRecord,
   createAccount,
+  createCategory,
   login,
   signup
 }
