@@ -4,7 +4,7 @@ const { prisma } = require('./generated/prisma-client')
 
 const resolvers = require('./resolvers')
 
-const env = process
+const { env } = process
 const endpoint = `${env.PRISMA_ENDPOINT}/${env.PRISMA_SERVICE}/${env.PRISMA_STAGE}`
 
 const server = new GraphQLServer({

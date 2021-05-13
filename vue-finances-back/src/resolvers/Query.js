@@ -38,8 +38,49 @@ function records (_, { month, type, accountsIds, categoriesIds }, ctx, info) {
 
   return ctx.db.query.records({
     where: { AND },
-    orderBy: 'date_ASC'
+    orderBy: "date_ASC"
   }, info)
+
+}
+
+function totalBalance (_, { date }, ctx, info) {
+
+  const userId = getUserId(ctx)
+  const dateISO = moment(date, "YYYY-MM-DD").endOf("day").toISOString()
+  const pgSchema = `${process.env.PRISMA_SERVICE}$${process.env.PRISMA_STAGE}`
+
+  const mutation = `
+    mutation TotalBalance($database: PrismaDatabase, $query: String!){
+      executeRaw(database: $database, query: $query)
+    }
+  `
+
+  const variables = {
+    database: "default",
+    query: `
+
+      SELECT SUM("${pgSchema}"."Record"."amount") AS totalBalance
+        FROM "${pgSchema}"."Record"
+    
+        INNER JOIN "${pgSchema}"."_RecordToUser"
+        ON "${pgSchema}"."_RecordToUser"."A" = "${pgSchema}"."Record"."id"
+        
+        WHERE "${pgSchema}"."_RecordToUser"."B" = '${userId}'
+        AND "${pgSchema}"."Record"."date" >= '${dateISO}'
+
+    `
+  }
+
+  console.log("pgSchema: ", pgSchema)
+  console.log("Query: ", variables.query)
+
+  return ctx.prisma.$graphql(mutation, variables)
+    .then(response => {
+      console.log("response: ", response)
+      const totalBalance = response.executeRaw[0].totalbalance
+      console.log("totalBalance: ", totalBalance)
+      return totalBalance ? totalBalance : 0
+    })
 
 }
 
@@ -95,5 +136,6 @@ module.exports = {
   user,
   accounts,
   categories,
-  records
+  records,
+  totalBalance
 }
